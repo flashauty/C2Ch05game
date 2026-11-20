@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>網絡安全特工任務</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: playful arcade, but clear like a good textbook — encouraging feedback
+   IDEA: a secret-agent mission board; each lesson section is a shield checkpoint
+   PICTURE: the mission map of six shield nodes on a path, unlocking as you pass
+   COLOUR and TYPE: electric blue field, white cards, coral accent, sunny yellow for stars; Noto Sans TC 900 + Chakra Petch digits
+   LAYOUT: map on top, then the play card in one calm column; stacks on phones */
+:root{color-scheme:light dark;
+--bg:light-dark(#eef1ff,#0d1340);--field:light-dark(#2b50ff,#1c2c9e);--card:light-dark(#ffffff,#18205a);
+--ink:light-dark(#10142e,#f2f4ff);--mute:light-dark(#545a7a,#aab1dc);--line:light-dark(#d6dbf5,#2e3a85);
+--coral:#ff5a3c;--sun:#ffd23f;--ok:light-dark(#0f8a4b,#5fe39a);--bad:light-dark(#d1342a,#ff8a7d);
+--okbg:light-dark(#e3f7ec,#123a2b);--badbg:light-dark(#fde8e6,#43201f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Noto Sans TC",system-ui,sans-serif;overflow-x:clip}
+.num{font-family:"Chakra Petch","Noto Sans TC",sans-serif}
+header{background:var(--field);color:#fff;padding:clamp(20px,3vw,36px) max(5vw,16px) 0}
+.top{max-width:1100px;margin:auto;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between}
+h1{margin:0;font-size:clamp(28px,4.4vw,46px);line-height:1.05;font-weight:900;text-wrap:balance}
+.sub{margin:6px 0 0;opacity:.85;font-size:16px}
+.hud{display:flex;gap:10px;flex-wrap:wrap}
+.pill{background:rgba(255,255,255,.14);border-radius:14px;padding:8px 14px;font-size:14px;line-height:1.2}
+.pill b{display:block;font-size:24px}
+.map{max-width:1100px;margin:auto;position:relative;height:210px}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;transform:translate(-50%,-50%);width:88px;text-align:center;background:none;border:0;color:#fff;cursor:pointer;font:inherit;padding:0}
+.node:disabled{cursor:not-allowed}
+.node .sh{width:62px;height:70px;margin:auto;display:block;transition:transform .2s}
+.node:not(:disabled):hover .sh{transform:translateY(-4px)}
+.node:focus-visible{outline:3px solid var(--sun);outline-offset:4px;border-radius:10px}
+.node small{display:block;font-size:13px;line-height:1.25;font-weight:700;margin-top:2px}
+.node .st{color:var(--sun);font-size:14px;letter-spacing:2px;height:18px}
+main{max-width:820px;margin:auto;padding:28px max(4vw,14px) 60px}
+.card{background:var(--card);border-radius:22px;padding:clamp(20px,3.4vw,36px);box-shadow:0 10px 0 var(--line)}
+h2{font-size:clamp(24px,3vw,32px);line-height:1.15;margin:0 0 8px;text-wrap:balance}
+.tag{display:inline-block;font-size:13px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--sun);color:#10142e;margin-bottom:10px}
+.tag.mid{background:#ffb26b}.tag.hi{background:var(--coral);color:#fff}
+.mute{color:var(--mute)}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:6px 0 18px}
+.bar i{display:block;height:100%;background:var(--coral);border-radius:99px;transition:width .3s}
+.qhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--mute)}
+.q{font-size:clamp(19px,2.3vw,22px);font-weight:700;line-height:1.45;margin:4px 0 12px}
+.stmts{margin:0 0 14px;padding:12px 16px 12px 44px;background:var(--bg);border-radius:12px;font-size:16px}
+.opts{display:grid;gap:10px}
+.opts.two{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.opt{min-height:52px;text-align:start;font:inherit;font-size:17px;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 16px;cursor:pointer;display:flex;gap:12px;align-items:center}
+.opt:hover:not(:disabled){border-color:var(--field)}
+.opt:focus-visible,.btn:focus-visible,input:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.opt .k{flex:none;width:30px;height:30px;border-radius:9px;background:var(--bg);display:grid;place-items:center;font-weight:700}
+.opt.right{border-color:var(--ok);background:var(--okbg)}.opt.wrong{border-color:var(--bad);background:var(--badbg)}
+.opt:disabled{cursor:default}
+.fb{margin-top:16px;border-radius:14px;padding:14px 18px;font-size:16px}
+.fb.ok{background:var(--okbg)}.fb.no{background:var(--badbg)}
+.fb strong{display:block;font-size:18px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;align-items:center}
+.btn{min-height:48px;font:inherit;font-weight:700;border:0;border-radius:14px;padding:10px 22px;cursor:pointer;background:var(--coral);color:#fff;box-shadow:0 4px 0 #b9361f}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b9361f}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line);box-shadow:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input[type=text]{font:inherit;font-size:17px;width:100%;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.timer{font-weight:700;color:var(--coral)}
+.rules{list-style:none;padding:0;margin:14px 0;display:grid;gap:6px}
+.rules li{padding:6px 12px;border-radius:10px;background:var(--bg);font-size:16px}
+.rules li.on{background:var(--okbg);color:var(--ok);font-weight:700}
+.meter{height:14px;border-radius:99px;background:var(--line);overflow:hidden}.meter i{display:block;height:100%;transition:width .25s,background .25s}
+.lvls{display:grid;gap:10px;margin:16px 0}
+.lv{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 14px;background:var(--bg);border-radius:12px;font-size:16px}
+.lv .st{color:#e0a800;letter-spacing:2px}
+.done{text-align:center}
+.done h2{font-size:clamp(40px,8vw,72px);color:var(--coral);margin:8px 0}
+.big{font-size:clamp(40px,7vw,64px);font-weight:700;line-height:1}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9}
+.confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:3px;animation:fall 3.2s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){.confetti{display:none}.bar i,.node .sh{transition:none}}
+@media(max-width:600px){.map{height:300px}.node{width:76px}.node .sh{width:50px;height:56px}.lv{grid-template-columns:minmax(0,1fr) auto}.lv .s{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div>
+      <h1>網絡安全特工任務</h1>
+      <p class="sub">第五課 · 網絡安全和私隱威脅 — 闖過六關，成為網絡安全特工</p>
+    </div>
+    <div class="hud">
+      <div class="pill">特工<b id="hName">—</b></div>
+      <div class="pill">總分<b class="num" id="hScore">0</b></div>
+      <div class="pill">已過關<b class="num" id="hPass">0/6</b></div>
+    </div>
+  </div>
+  <div class="map" id="map" aria-label="任務地圖"></div>
+</header>
+<main><div class="card" id="stage"></div></main>
+<div class="confetti" id="conf"></div>
+
+<script>
+{
+const C6=['電腦病毒','蠕蟲','木馬程式','間諜軟件','廣告軟件','勒索軟件'];
+const CB=['只有 (1)','只有 (1) 和 (2)','只有 (2) 和 (3)','(1)、(2) 和 (3)'];
+const LV=[
+{t:'惡意軟件大搜查',lv:'初級',d:'看描述，認出是哪一種惡意軟件。',q:[
+ {q:'它依附在可執行檔中，用戶一執行程式就會刪除檔案，並自我複製到電腦內其他檔案。',o:C6,a:0,e:'電腦病毒會依附於檔案，執行後攻擊檔案，並能自我複製擴散到其他檔案。'},
+ {q:'它無須依附任何檔案，用戶打開電郵附件後，它自動把副本寄給通訊錄中所有聯絡人。',o:C6,a:1,e:'蠕蟲可自我複製並自行在網絡傳播，常以電子郵件作傳播途徑。'},
+ {q:'一個「免費修圖 App」看似很好用，安裝後卻建立了後門，讓黑客遙距控制電腦。',o:C6,a:2,e:'木馬程式偽裝成實用程式吸引下載，並可建立後門程式讓黑客入侵。'},
+ {q:'它暗中記錄你的鍵盤輸入和網絡活動，目的是竊取用戶名稱和密碼。',o:C6,a:3,e:'間諜軟件的主要目的是竊取個人資料，例如密碼、網絡活動記錄及鍵盤輸入。'},
+ {q:'安裝了一個免費軟件後，畫面不斷彈出視窗和橫幅廣告。',o:C6,a:4,e:'廣告軟件以顯示廣告獲利，通常嵌於免費軟件中一同被下載。'},
+ {q:'電腦內的檔案全部被加密，畫面要求繳付「贖金」才解密，限時內不付款檔案就會被刪除。',o:C6,a:5,e:'勒索軟件把檔案加密，再要求受害者繳付贖金解密。'},
+ {q:'以下哪一項不是蠕蟲的特性？',o:['能夠偽裝為有用的應用程式','能夠自我複製','能夠自行在電腦網絡中傳播','能夠透過電郵感染電腦'],a:0,e:'偽裝成有用的應用程式是木馬程式的特性，不是蠕蟲的。'},
+ {q:'受木馬程式感染的電腦會面臨以下哪項威脅？',s:['瀏覽網頁被記錄','帳號密碼被竊取','視像鏡頭被偷窺'],o:CB,a:3,e:'木馬程式可建立後門，讓黑客遠程控制裝置，三項威脅都可能發生。'}]},
+{t:'攻擊與防禦',lv:'初級',d:'認識常見網絡攻擊，以及防毒軟件、防火牆、存取控制和 VPN。',q:[
+ {q:'黑客在發送者和接收者之間分別建立連線，攔截甚至竄改雙方的通訊。這是甚麼攻擊？',o:['中間人攻擊','拒絕服務攻擊','仿冒詐騙','電腦病毒'],a:0,e:'中間人攻擊：黑客夾在雙方之間，轉發、攔截或竄改通訊內容。'},
+ {q:'商場內出現一個名為「Mall_Free_WiFi」、無需密碼的熱點。最需要提防的是甚麼？',o:['它可能是黑客設置的 Wi-Fi 竊聽陷阱','它的網速一定很慢','它會令手機電量耗盡','它只限商場職員使用'],a:0,e:'黑客會設置無需密碼、以地點命名的 Wi-Fi 陷阱，誘騙受害人連接以竊聽數據。'},
+ {q:'大量分布在不同地方的殭屍電腦同時向伺服器發送請求，令伺服器癱瘓。這稱為？',o:['分布式拒絕服務攻擊（DDoS）','中間人攻擊','Wi-Fi 竊聽','假託'],a:0,e:'DDoS 利用分布各地的殭屍電腦耗盡目標伺服器的網絡資源。'},
+ {q:'防毒軟件怎樣鑑別檔案是否帶有已知的病毒？',o:['把檔案內容與病毒數據庫中的病毒識別碼比較','檢查檔案大小是否太大','檢查檔案的建立日期','要求用戶輸入密碼'],a:0,e:'病毒識別碼就像「指紋」，防毒軟件用它來識別已知的病毒。'},
+ {q:'以下哪項 / 些是防火牆的功能？',s:['防止黑客入侵','共享互聯網連接','過濾網頁'],o:['只有 (1)','只有 (1) 和 (3)','只有 (2) 和 (3)','(1)、(2) 和 (3)'],a:1,e:'防火牆過濾進出的數據包、阻擋入侵並過濾有害訊息；共享互聯網連接是路由器的工作。'},
+ {q:'在存取控制中，「驗證用戶身份的過程」稱為？',o:['認證','授權','帳號管理','加密'],a:0,e:'認證＝驗證身份；授權＝授予存取權限；帳號管理＝監察存取紀錄。'},
+ {q:'小明安裝了二維碼掃描器 App，它要求以下權限。他應該允許哪些？',s:['相機','聯絡人','位置'],o:['只有 (1)','只有 (1) 和 (3)','只有 (2) 和 (3)','(1)、(2) 和 (3)'],a:0,e:'掃描二維碼只需要相機。只授予必要的權限，可保護私隱。'},
+ {q:'以下哪一項是使用虛擬私有網絡（VPN）的缺點？',o:['減低連線速度','加密經互聯網傳送的數據','隱藏 IP 位址','成本比專線低'],a:0,e:'VPN 的優點是加密數據、保護網上身份、成本較專線低；缺點是會減低連線速度。'}]},
+{t:'Wi-Fi 與瀏覽器守衛',lv:'中級',d:'快速判斷對錯，再處理 Wi-Fi 情境題。',q:[
+ {tf:1,q:'曾經有使用 WEP 加密的 Wi-Fi 網絡在數分鐘內被破解。',a:0,e:'正確。因為 WEP 有弱點，所以後來出現了 WPA 加密協定。'},
+ {tf:1,q:'在無線路由器關閉 SSID 廣播，可以隱藏網絡名稱，令其他裝置無法自動搜尋到它。',a:0,e:'正確。這樣可防止他人肆意存取網絡。'},
+ {tf:1,q:'啟用 MAC 位址過濾後，任何裝置都可以使用該 Wi-Fi 網絡。',a:1,e:'錯誤。只有 MAC 位址在白名單上的裝置才可使用。'},
+ {tf:1,q:'在公共 Wi-Fi 使用網上銀行很安全，因為很多人都在用。',a:1,e:'錯誤。任何人都能連接公共網絡，黑客或會監控進出的資訊，應避免進行涉及私隱的活動。'},
+ {tf:1,q:'應關閉瀏覽器的自動更新功能，以免軟件被更改。',a:1,e:'錯誤。應啟用自動更新，確保及時修補軟件漏洞。'},
+ {tf:1,q:'啟用瀏覽器「阻擋顯示彈出式視窗」和「禁止網頁重新導向」，有助加強保安。',a:0,e:'正確。彈出廣告會增加電腦被惡意軟件入侵的風險。'},
+ {q:'以下哪組是正確的無線加密協議安全級別（由高至低）？',o:['WPA2 > WPA > WEP','WEP > WPA2 > WPA','WEP > WPA > WPA2','WPA > WPA2 > WEP'],a:0,e:'WPA2 最安全，WEP 最弱。'},
+ {q:'OK 商場提供免費 Wi-Fi，但用戶不應用它進行股票交易。主要原因是？',o:['無線網絡的密碼強度不足','每節連接時間太短','此網絡沒有加密傳輸數據','網速太低'],a:2,e:'公共 Wi-Fi 一般沒有加密傳輸數據，資料容易被攔截。'},
+ {q:'李先生發現鄰居的 Wi-Fi 沒有任何保安設定，他可隨意登入其路由器。他應該怎樣做？',o:['連接此網絡，但只用作瀏覽網頁','登入路由器，幫鄰居關閉 SSID 廣播','登入路由器加設密碼，據為己有','不用理會此網絡'],a:3,e:'未經授權使用或更改他人網絡都不恰當，甚至可能違法。'}]},
+{t:'私隱保衛戰',lv:'中級',d:'識破社交工程、仿冒詐騙等私隱威脅。',q:[
+ {q:'有人自稱銀行職員，編了一個「帳戶出現異常」的故事，要求你提供密碼。這是？',o:['假託','竊聽','濫發電子訊息','拒絕服務攻擊'],a:0,e:'假託：騙徒虛構情節甚至冒充角色，博取信任，誘騙受害人提供資料或匯款。'},
+ {q:'你收到一封「銀行」電郵，附有連結，帶你到一個外觀和官方網站一模一樣的網頁輸入信用卡資料。這是？',o:['仿冒詐騙','中間人攻擊','廣告軟件','過度收集資料'],a:0,e:'仿冒詐騙會偽造官方網站，再以電郵 / 短訊的超連結誘騙受害人輸入資料。'},
+ {q:'未經同意，擅自攔截並監聽他人的私人通訊內容，稱為？',o:['竊聽','假託','餌誘','黑客入侵'],a:0,e:'這是竊聽的定義。'},
+ {q:'以下哪項 / 些關於仿冒詐騙的描述是正確的？',s:['可透過電郵發出偽造網站的超連結，誘騙受害人點擊','仿冒詐騙電郵是商業機構向客戶發出的廣告郵件','受害人開啟仿冒詐騙電郵後，電腦內的個人資料會被盜取'],o:['只有 (1)','只有 (2)','只有 (1) 和 (3)','只有 (2) 和 (3)'],a:0,e:'(2) 那是廣告郵件，不是仿冒詐騙；(3) 單是開啟電郵不會自動盜取資料，要點擊連結並輸入資料才會中招。'},
+ {q:'阿一收到匿名電郵，說附件「you.exe」裏有他的照片。執行後卻看不到照片。最可能的原因是？',o:['電腦沒有安裝相片瀏覽器','這些相片是透明的','電郵伺服器不能執行該附件','附件是惡意軟件的偽裝，已入侵電腦'],a:3,e:'.exe 是可執行檔，不是相片。帶 exe、vbs、bat 副檔名的附件應先用防毒軟件掃描。'},
+ {q:'以下哪項 / 些措施能有效避免在使用社交平台時遇到威脅？',s:['在個人檔案內只公開姓名和居住地址','封鎖或不理會不認識的人的交友邀請','使用預設私隱設定來限制閱覽'],o:['只有 (1)','只有 (2)','只有 (1) 和 (2)','只有 (1) 和 (3)'],a:1,e:'公開住址會令個人資料過度曝光；預設私隱設定往往不夠嚴謹，應自行調整。'},
+ {q:'在學校的公共電腦使用網上服務後，最應該做甚麼？',o:['清除瀏覽紀錄和 cookies','把密碼存入瀏覽器方便下次使用','開啟自動填入功能','把電腦關機前截圖保存'],a:0,e:'使用公共電腦後要清除瀏覽紀錄、cookies 和暫存檔案，也可直接用「私密瀏覽」。'},
+ {q:'以下哪項 / 些是代理伺服器的功能？',s:['過濾網頁','增加互聯網連接的頻寬','暫存網頁以作高速緩衝儲存'],o:['只有 (1)','只有 (2)','只有 (1) 和 (3)','只有 (2) 和 (3)'],a:2,e:'代理伺服器可隱藏 IP、過濾和封鎖網站、暫存網頁；但它不能增加頻寬。'}]},
+{t:'密碼實驗室',lv:'中級',d:'先親手設計一個強密碼，再回答密碼習慣的問題。',pw:1,q:[
+ {q:'以下哪一個密碼最安全？',o:['password','12345678','chan20090315','Tg7#qLm2!x'],a:3,e:'它有 10 個字符，混合大小寫、數字和特殊字符，又不含個人資料或常見字詞。'},
+ {q:'建議最少多久更換一次密碼？',o:['三個月','三年','每次忘記時才換','永遠不用換'],a:0,e:'定期更改密碼，建議最少三個月更換一次。'},
+ {q:'以下哪一個是保護密碼的好習慣？',o:['不要在不同系統上使用同一組密碼','把密碼寫在便條貼在螢幕旁','和最好的朋友共用密碼','輪流使用最近的兩組密碼'],a:0,e:'一個系統被入侵，同一組密碼的其他帳號也會失守。也不要重用最近三組密碼。'},
+ {q:'網上閱讀平台在用戶第一次登入時，強制要求更改密碼。好處是？',o:['避免因預設密碼外洩而被入侵，確保密碼個人化','令登入速度更快','讓老師知道學生的密碼','令平台不用加密'],a:0,e:'預設密碼可能被他人知道，首次登入更改可確保只有用戶本人知道。'},
+ {q:'平台每次登入後顯示「上次登入的日期、時間及狀態（成功 / 失敗）」。好處是？',o:['用戶可確認上次登入的是否自己，並知道有沒有人企圖登入','可以減少密碼長度','可以代替防毒軟件','可以增加網速'],a:0,e:'如見到不是自己的登入或多次失敗紀錄，就要立即更改密碼。'}]},
+{t:'終極挑戰',lv:'高級',d:'綜合題目，每題限時 25 秒，越快答對，時間獎勵越多！',timed:25,q:[
+ {q:'陳先生發現電腦檔案被加密，黑客要求贖金才還原。他應該怎樣處理？',o:['把加密檔案複製到另一部電腦開啟','立即交付贖金以解密','立即向警方報案','重新啟動電腦'],a:2,e:'交贖金不保證能取回檔案，還會助長罪行，應立即報警。'},
+ {q:'以下哪項 / 些惡意軟件會依附於 / 藏身於其他程式？',s:['電腦病毒','蠕蟲','木馬程式'],o:['只有 (2)','只有 (1) 和 (2)','只有 (1) 和 (3)','(1)、(2) 和 (3)'],a:2,e:'病毒依附於檔案；木馬藏身於看似有用的程式；蠕蟲則無須依附任何檔案。'},
+ {q:'以下哪項 / 些保安措施能夠有效阻擋惡意軟件入侵？',s:['定期更新電腦的保安系統','安裝防火牆','加密所有檔案'],o:['只有 (1)','只有 (1) 和 (2)','只有 (2) 和 (3)','(1)、(2) 和 (3)'],a:1,e:'加密檔案保護的是資料保密，不能阻擋惡意軟件進入電腦。'},
+ {q:'保持以下哪項習慣能減低受勒索軟件影響的可能性？',s:['不打開可疑電郵內的附件或超連結','不用 P2P 軟件下載盜版軟件','定期備份檔案'],o:CB,a:3,e:'(1)(2) 減少感染機會；(3) 即使中招也能從備份還原。'},
+ {q:'傑克安裝免費軟件後，彈出「X 已封鎖此應用程式的部分功能」的安全警報。X 最可能是？',o:['防毒軟件','防火牆','工作管理員','裝置管理員'],a:1,e:'防火牆監控網絡流量，會封鎖程式未經授權的網絡存取並發出警報。'},
+ {q:'小玉好奇點擊了可疑電郵的網址，沒有輸入資料。以下哪項不是她面對的潛在威脅？',o:['網頁內的惡意手稿程式可能入侵電腦','被導向偽造的釣魚網站','發送者知道她點擊了，發出更多垃圾郵件','她的電腦螢幕會立即損壞'],a:3,e:'惡意程式、釣魚網站和更多垃圾郵件都是真實威脅，但點擊連結不會令硬件損壞。'},
+ {q:'收到帶 .exe 附件的電郵，又真的有必要查看，應該？',o:['先用防毒軟件掃描附件才開啟','直接開啟，因為是寄給自己的','把副檔名改成 .jpg 再開','轉寄給朋友幫忙開'],a:0,e:'特別是 exe、vbs、bat 等附件，必須先掃描。'},
+ {q:'VPN 除了加密數據包外，還可以？',o:['隱藏 IP 位址以保護網上身份','提高電腦的運算速度','自動清除電腦病毒','代替防火牆的所有功能'],a:0,e:'VPN 加密數據以確保保密性，並隱藏 IP 位址保護網上身份。'},
+ {q:'伺服器被黑客入侵後，可能出現以下哪個後果？',o:['成為殭屍電腦，對網站發動拒絕服務攻擊','網速自動提升','電腦會自動安裝防火牆','所有密碼自動變得更強'],a:0,e:'後果包括數據被盜或破壞、網站被塗鴉、成為殭屍電腦參與 DoS 攻擊。'},
+ {q:'網購平台註冊時要求填寫宗教和每月收入，這屬於哪種私隱威脅？應怎樣做？',o:['過度收集資料；想清楚是否必要，並細閱私隱政策','竊聽；立即關機','DDoS；報警','沒有問題；全部如實填寫'],a:0,e:'與服務無關的資料一旦外洩，可能被轉移作商業用途；應謹慎提供。'}]}
+];
+const PRAISE=['答對了！','好眼力！','特工級表現！','正中目標！','厲害！'];
+const OOPS=['差一點！','再想想～','中伏了！','未對，看看解釋：'];
+const $=s=>document.querySelector(s),stage=$('#stage');
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let S={name:'',res:{}};
+try{const v=JSON.parse(localStorage.getItem('cyberCh5')||'null');if(v&&v.res)S=v}catch(e){}
+const save=()=>{try{localStorage.setItem('cyberCh5',JSON.stringify(S))}catch(e){}};
+const stars=p=>p>=.9?3:p>=.75?2:p>=.6?1:0;
+const passed=i=>S.res[i]&&S.res[i].pct>=.6;
+const unlocked=i=>i===0||passed(i-1);
+const total=()=>Object.values(S.res).reduce((t,r)=>t+r.score,0);
+let G=null,tick=null;
+
+function hud(){
+  $('#hName').textContent=S.name||'—';$('#hScore').textContent=total();
+  $('#hPass').textContent=LV.filter((_,i)=>passed(i)).length+'/6';drawMap();
+}
+function drawMap(){
+  const m=$('#map'),narrow=m.clientWidth<600;
+  const pts=LV.map((_,i)=>narrow?[(i%3)*33+17,i<3?28:74]:[i*17.6+6,i%2?64:36]);
+  const d=pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');
+  m.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="'+d+'" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-dasharray="2 2" vector-effect="non-scaling-stroke" style="stroke-width:4px"/></svg>'+
+  LV.map((L,i)=>{const ok=passed(i),op=unlocked(i),r=S.res[i];
+   const fill=ok?'#ffd23f':op?'#ff5a3c':'rgba(255,255,255,.22)',ink=ok?'#10142e':'#fff';
+   return '<button class="node" data-i="'+i+'" '+(op?'':'disabled')+' style="left:'+pts[i][0]+'%;top:'+pts[i][1]+'%" aria-label="第'+(i+1)+'關 '+L.t+(op?'':'（未解鎖）')+'">'+
+   '<svg class="sh" viewBox="0 0 62 70"><path d="M31 2 58 12v22c0 17-12 29-27 34C16 63 4 51 4 34V12Z" fill="rgba(0,0,0,.25)" transform="translate(2 3)"/><path d="M31 2 58 12v22c0 17-12 29-27 34C16 63 4 51 4 34V12Z" fill="'+fill+'" stroke="#fff" stroke-width="2.5"/><path d="M31 6v58C18 59 8 48 8 34V15Z" fill="rgba(255,255,255,.18)"/>'+
+   (op?'<text x="31" y="44" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-weight="700" font-size="26" fill="'+ink+'">'+(i+1)+'</text>':'<path d="M23 36h16v14H23zM26 36v-5a5 5 0 0 1 10 0v5" fill="none" stroke="#fff" stroke-width="3"/>')+'</svg>'+
+   '<span class="st">'+(r?'★'.repeat(stars(r.pct))+'☆'.repeat(3-stars(r.pct)):'')+'</span><small>'+L.t+'</small></button>'}).join('');
+}
+$('#map').addEventListener('click',e=>{const b=e.target.closest('.node');if(b&&!b.disabled&&S.name)intro(+b.dataset.i)});
+new ResizeObserver(()=>drawMap()).observe($('#map'));
+
+function home(){
+  clearInterval(tick);
+  if(!S.name){
+    stage.innerHTML='<span class="tag">特工登記</span><h2>歡迎加入網絡安全特工隊！</h2><p class="mute">黑客正在入侵！你要完成六個任務，學懂惡意軟件、網絡攻擊、保安措施和私隱保護。每關答對 60% 或以上即可過關並解鎖下一關。</p>'+
+    '<form id="f"><label for="nm"><b>輸入你的特工代號</b></label><div class="row" style="margin-top:8px"><input type="text" id="nm" maxlength="16" placeholder="例如：陳大文 2D-05" required style="flex:1 1 220px"><button class="btn">開始任務</button></div></form>';
+    $('#f').onsubmit=e=>{e.preventDefault();const v=$('#nm').value.trim();if(!v)return;S.name=v;save();hud();home()};return;
+  }
+  const n=LV.filter((_,i)=>passed(i)).length;
+  if(n===6)return finale();
+  const nx=LV.findIndex((_,i)=>!passed(i));
+  stage.innerHTML='<span class="tag">任務總部</span><h2>特工 '+esc(S.name)+'，準備好了嗎？</h2><p class="mute">已完成 '+n+' / 6 個任務。點選上方地圖的盾牌，或直接開始下一關。重玩可刷新最高分。</p>'+
+  '<div class="lvls">'+LV.map((L,i)=>{const r=S.res[i];return '<div class="lv"><span><b>第 '+(i+1)+' 關 · '+L.t+'</b> <span class="mute">（'+L.lv+'）</span></span><span class="st">'+(r?'★'.repeat(stars(r.pct))+'☆'.repeat(3-stars(r.pct)):'')+'</span><span class="s mute num">'+(r?Math.round(r.pct*100)+'% · '+r.score+' 分':unlocked(i)?'未挑戰':'🔒 未解鎖')+'</span></div>'}).join('')+'</div>'+
+  '<div class="row"><button class="btn" id="go">開始第 '+(nx+1)+' 關</button><button class="btn ghost" id="rs">重設進度</button></div>';
+  $('#go').onclick=()=>intro(nx);
+  $('#rs').onclick=()=>{stage.querySelector('.row').innerHTML='<span>確定清除所有分數？</span><button class="btn" id="y">確定</button><button class="btn ghost" id="n">取消</button>';$('#y').onclick=()=>{S={name:'',res:{}};save();hud();home()};$('#n').onclick=home};
+}
+function intro(i){
+  clearInterval(tick);const L=LV[i];
+  stage.innerHTML='<span class="tag '+(L.lv==='高級'?'hi':L.lv==='中級'?'mid':'')+'">第 '+(i+1)+' 關 · '+L.lv+'</span><h2>'+L.t+'</h2><p>'+L.d+'</p><p class="mute">共 '+L.q.length+' 題'+(L.pw?' ＋ 密碼設計挑戰（300 分）':'')+'。每題 100 分，連續答對有連擊獎勵'+(L.timed?'，剩餘秒數 × 5 為時間獎勵':'')+'。</p><div class="row"><button class="btn" id="go">出發！</button><button class="btn ghost" id="bk">返回總部</button></div>';
+  $('#go').onclick=()=>{G={i,qs:shuffle(L.q),k:0,ok:0,score:0,combo:0,best:0,pw:!!L.pw,miss:[]};G.pw?pwLab():ask()};$('#bk').onclick=home;$('#go').focus();
+}
+function ask(){
+  const L=LV[G.i],Q=G.qs[G.k],n=G.qs.length;
+  const opts=Q.tf?['正確 ✓','錯誤 ✗']:Q.o;
+  stage.innerHTML='<div class="qhead"><span>第 '+(G.i+1)+' 關 · '+L.t+'</span><span class="num">題 '+(G.k+1)+'/'+n+' · '+G.score+' 分'+(G.combo>1?' · 連擊 ×'+G.combo:'')+(L.timed?' · <span class="timer" id="tm">'+L.timed+'s</span>':'')+'</span></div>'+
+  '<div class="bar"><i style="width:'+(G.k/n*100)+'%"></i></div>'+(Q.tf?'<span class="tag">判斷對錯</span>':'')+
+  '<p class="q">'+Q.q+'</p>'+(Q.s?'<ol class="stmts">'+Q.s.map(s=>'<li>'+s+'</li>').join('')+'</ol>':'')+
+  '<div class="opts '+(Q.tf||opts.length>4?'two':'')+'">'+opts.map((o,j)=>'<button class="opt" data-j="'+j+'"><span class="k num">'+'ABCDEF'[j]+'</span><span>'+o+'</span></button>').join('')+'</div><div id="fb"></div>';
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.j));
+  if(L.timed){let t=L.timed;G.left=t;tick=setInterval(()=>{t--;G.left=t;const e=$('#tm');if(e)e.textContent=t+'s';if(t<=0){clearInterval(tick);answer(-1)}},1000)}
+}
+function answer(j){
+  clearInterval(tick);const L=LV[G.i],Q=G.qs[G.k],ok=j===Q.a;
+  stage.querySelectorAll('.opt').forEach((b,x)=>{b.disabled=true;if(x===Q.a)b.classList.add('right');else if(x===j)b.classList.add('wrong')});
+  let gain=0;
+  if(ok){G.ok++;G.combo++;G.best=Math.max(G.best,G.combo);gain=100+Math.min(100,20*(G.combo-1))+(L.timed?Math.max(0,G.left)*5:0);G.score+=gain}
+  else{G.combo=0;G.miss.push(Q.q)}
+  const last=G.k===G.qs.length-1;
+  $('#fb').innerHTML='<div class="fb '+(ok?'ok':'no')+'" role="status"><strong>'+(ok?pick(PRAISE)+' +'+gain+' 分':j<0?'時間到！':pick(OOPS))+'</strong>'+Q.e+'</div><div class="row"><button class="btn" id="nx">'+(last?'查看成績':'下一題')+'</button></div>';
+  $('#nx').onclick=()=>{G.k++;last?result():ask()};$('#nx').focus();
+}
+function pwLab(){
+  const COMMON=['password','123456','qwerty','abc123','111111','iloveyou','admin'];
+  const R=[['至少 8 個字符',p=>p.length>=8],['至少 1 個數字',p=>/\d/.test(p)],['至少 1 個大寫字母',p=>/[A-Z]/.test(p)],['至少 1 個小寫字母',p=>/[a-z]/.test(p)],['至少 1 個特殊字符（如 # ! @ $）',p=>/[^A-Za-z0-9]/.test(p)],['不是常見字詞或簡單數列',p=>p.length>0&&!COMMON.some(c=>p.toLowerCase().includes(c))&&!/(\d)\1{3}|1234|2345|3456|4567|5678|6789/.test(p)],['不像生日或電話（不可有 6 個以上連續數字）',p=>p.length>0&&!/\d{6,}/.test(p)]];
+  stage.innerHTML='<span class="tag mid">密碼設計挑戰</span><h2>設計一個強密碼</h2><p class="mute">輸入一個<b>虛構</b>的密碼（不要用你真正的密碼！），滿足全部七項規則即可獲得 300 分。</p>'+
+  '<label for="pw"><b>試輸入密碼</b></label><input type="text" id="pw" autocomplete="off" spellcheck="false" style="margin-top:8px"><div class="meter" style="margin-top:12px"><i id="mt" style="width:0"></i></div><p id="lab" class="mute" style="margin:6px 0 0">強度：—</p>'+
+  '<ul class="rules" id="rl"></ul><div class="row"><button class="btn" id="ok" disabled>提交密碼</button><button class="btn ghost" id="sk">跳過（0 分）</button></div>';
+  const upd=()=>{const p=$('#pw').value,n=R.filter(r=>r[1](p)).length;
+   $('#rl').innerHTML=R.map(r=>'<li class="'+(r[1](p)?'on':'')+'">'+(r[1](p)?'✓ ':'○ ')+r[0]+'</li>').join('');
+   const c=n<=3?'#d1342a':n<=5?'#f0a000':n<7?'#7bbf2a':'#0f8a4b';$('#mt').style.width=(n/7*100)+'%';$('#mt').style.background=c;
+   $('#lab').textContent='強度：'+(p?['極弱','極弱','弱','弱','中','中','強','非常強'][n]:'—');$('#ok').disabled=n<7};
+  $('#pw').oninput=upd;upd();$('#pw').focus();
+  const go=pts=>{G.score+=pts;G.pwPts=pts;
+   stage.innerHTML='<div class="fb '+(pts?'ok':'no')+'"><strong>'+(pts?'密碼合格！+300 分':'已跳過密碼挑戰')+'</strong>好密碼要夠長、混合不同字符，又不可包含個人資料。記住：定期更換、不要共用、不要在不同系統用同一組密碼。</div><div class="row"><button class="btn" id="nx">開始密碼問答</button></div>';
+   $('#nx').onclick=ask;$('#nx').focus()};
+  $('#ok').onclick=()=>go(300);$('#sk').onclick=()=>go(0);
+}
+function comment(p){return p>=.9?'表現出色！你對這部分已經非常熟練。':p>=.75?'做得好！還有少量概念可以再鞏固。':p>=.6?'成功過關！建議重溫錯題的解釋，再挑戰拿更多星星。':'未能過關。先重溫課本相關部分，再試一次，你一定做得到！'}
+function result(){
+  const L=LV[G.i],pct=G.ok/G.qs.length,prev=S.res[G.i],ok=pct>=.6;
+  if(!prev||G.score>prev.score||(pct>prev.pct))S.res[G.i]={pct:Math.max(pct,prev?prev.pct:0),score:Math.max(G.score,prev?prev.score:0)};
+  save();hud();const st=stars(pct);
+  if(ok&&LV.every((_,i)=>passed(i)))return finale(true);
+  stage.innerHTML='<span class="tag '+(ok?'':'hi')+'">第 '+(G.i+1)+' 關 · '+(ok?'過關':'未過關')+'</span><h2>'+L.t+'：'+(ok?'任務成功！':'任務失敗')+'</h2>'+
+  '<p class="big num" style="color:#e0a800">'+'★'.repeat(st)+'<span style="opacity:.3">'+'★'.repeat(3-st)+'</span></p>'+
+  '<p>答對 <b class="num">'+G.ok+' / '+G.qs.length+'</b>（'+Math.round(pct*100)+'%）· 本次得分 <b class="num">'+G.score+'</b> · 最高連擊 <b class="num">'+G.best+'</b></p>'+
+  '<div class="fb '+(ok?'ok':'no')+'"><strong>教官評語</strong>'+comment(pct)+'</div>'+
+  (G.miss.length?'<p style="margin-top:16px"><b>需要重溫的題目：</b></p><ul class="mute">'+G.miss.map(m=>'<li>'+m+'</li>').join('')+'</ul>':'')+
+  '<div class="row">'+(ok&&G.i<5?'<button class="btn" id="nx">前往第 '+(G.i+2)+' 關</button>':'')+'<button class="btn '+(ok?'ghost':'')+'" id="re">再玩一次</button><button class="btn ghost" id="hm">返回總部</button></div>';
+  if($('#nx'))$('#nx').onclick=()=>intro(G.i+1);$('#re').onclick=()=>intro(G.i);$('#hm').onclick=home;
+}
+function finale(fresh){
+  const ps=LV.map((_,i)=>S.res[i].pct),avg=ps.reduce((a,b)=>a+b,0)/6,weak=ps.indexOf(Math.min(...ps));
+  const rank=avg>=.9?'網絡安全大師':avg>=.75?'資深防衛特工':'合格網絡特工';
+  const allStars=ps.reduce((t,p)=>t+stars(p),0);
+  stage.innerHTML='<div class="done"><span class="tag hi">全部六關已完成</span><h2>任務完成！</h2><p style="font-size:20px">恭喜特工 <b>'+esc(S.name)+'</b>，你成功守護了網絡世界！</p>'+
+  '<p class="mute" style="margin:18px 0 4px">總分</p><p class="big num">'+total()+'</p>'+
+  '<p style="margin-top:14px">稱號：<b style="color:var(--coral);font-size:22px">'+rank+'</b> · 星星 <b class="num">'+allStars+' / 18</b></p></div>'+
+  '<div class="lvls">'+LV.map((L,i)=>'<div class="lv"><b>第 '+(i+1)+' 關 · '+L.t+'</b><span class="st">'+'★'.repeat(stars(ps[i]))+'☆'.repeat(3-stars(ps[i]))+'</span><span class="s mute num">'+Math.round(ps[i]*100)+'% · '+S.res[i].score+' 分</span></div>').join('')+'</div>'+
+  '<div class="fb ok"><strong>教官總評</strong>'+(avg>=.9?'你對第五課的概念掌握得非常全面，可以嘗試幫同學溫習！':'整體表現不錯。你在「'+LV[weak].t+'」的得分最低，建議重玩這一關，爭取三星。')+'</div>'+
+  '<div class="row" style="justify-content:center"><button class="btn" id="rp">重玩「'+LV[weak].t+'」</button><button class="btn ghost" id="hm">查看總部</button></div>';
+  $('#rp').onclick=()=>intro(weak);$('#hm').onclick=()=>{stage.innerHTML='';homeList()};
+  if(fresh){const c=$('#conf'),cols=['#ff5a3c','#ffd23f','#2b50ff','#5fe39a','#fff'];c.innerHTML=Array.from({length:70},()=>'<i style="left:'+Math.random()*100+'%;background:'+pick(cols)+';animation-delay:'+(Math.random()*1.2)+'s"></i>').join('');setTimeout(()=>c.innerHTML='',4800)}
+}
+function homeList(){
+  stage.innerHTML='<span class="tag">任務總部</span><h2>重玩任何一關，刷新最高分</h2><div class="lvls">'+LV.map((L,i)=>'<button class="opt" data-i="'+i+'"><span class="k num">'+(i+1)+'</span><span>'+L.t+'（'+L.lv+'）· '+Math.round(S.res[i].pct*100)+'%</span></button>').join('')+'</div><div class="row"><button class="btn" id="fn">返回完成畫面</button></div>';
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>intro(+b.dataset.i));$('#fn').onclick=()=>finale();
+}
+hud();home();
+}
+</script>
+</body>
+</html>
